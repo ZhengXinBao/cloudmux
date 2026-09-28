@@ -154,6 +154,21 @@ func TestPostgreSQLReadonlyAndStatus(t *testing.T) {
 	}
 }
 
+// 腾讯云 SDK 响应经 encoding/json 解析后数字为 float64，ProjectId 不能被格式化成 "0.000000"
+func TestPostgreSQLProjectIdFromFloat(t *testing.T) {
+	for _, projectId := range []float64{0, 1234567} {
+		obj := jsonutils.Marshal(map[string]interface{}{"DBInstanceId": "postgres-x", "ProjectId": projectId})
+		pg := &SPostgreSQL{}
+		if err := obj.Unmarshal(pg); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		want := jsonutils.NewInt(int64(projectId)).String()
+		if pg.GetProjectId() != want {
+			t.Errorf("projectId: got %q, want %q", pg.GetProjectId(), want)
+		}
+	}
+}
+
 func TestParsePostgresTime(t *testing.T) {
 	for _, s := range []string{"", "0000-00-00 00:00:00", "invalid"} {
 		if !parsePostgresTime(s).IsZero() {
