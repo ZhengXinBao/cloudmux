@@ -146,7 +146,14 @@ func (addr *SAddress) GetAssociationExternalId() string {
 	if len(addr.instanceId) > 0 {
 		return addr.instanceId
 	}
-	if len(addr.Users) > 0 {
+	// 区域地址挂在转发规则上。转发规则的数字 id 对不上 CMDB 里的 URL Map / 后端服务，解析不到就留空。
+	if addr.GetAssociationType() == api.EIP_ASSOCIATE_TYPE_LOADBALANCER {
+		if addr.region == nil {
+			return ""
+		}
+		return loadbalancerIdFromUsers(addr.region.GetBySelfId, addr.Users)
+	}
+	if len(addr.Users) > 0 && addr.region != nil {
 		res := &SResourceBase{}
 		err := addr.region.GetBySelfId(addr.Users[0], res)
 		if err != nil {

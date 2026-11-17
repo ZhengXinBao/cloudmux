@@ -149,23 +149,10 @@ func (region *SGlobalRegion) CreateEIP(args *cloudprovider.SEip) (cloudprovider.
 }
 
 func (addr *SGlobalAddress) GetAssociationExternalId() string {
-	associateType := addr.GetAssociationType()
-	for _, user := range addr.Users {
-		if associateType == api.EIP_ASSOCIATE_TYPE_LOADBALANCER {
-			forword := &SForwardingRule{}
-			err := addr.region.GetBySelfId(user, forword)
-			if err != nil {
-				return ""
-			}
-			proxy := &STargetHttpProxy{}
-			err = addr.region.GetBySelfId(forword.Target, proxy)
-			if err != nil {
-				return ""
-			}
-			return getGlobalId(proxy.URLMap)
-		}
+	if addr.GetAssociationType() != api.EIP_ASSOCIATE_TYPE_LOADBALANCER || addr.region == nil {
+		return ""
 	}
-	return ""
+	return loadbalancerIdFromUsers(addr.region.GetBySelfId, addr.Users)
 }
 
 func (addr *SGlobalAddress) GetAssociationType() string {
